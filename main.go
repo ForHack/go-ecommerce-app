@@ -1,9 +1,17 @@
 package main
 
-import "fmt"
+import (
+	"go-ecommerce-app/configs"
+	"go-ecommerce-app/internal/api"
+	"log"
+)
 
 func main() {
-	fmt.Println("Hello, World!")
-}
+	cfg, err := configs.SetupEnv()
 
-// This is a simple Go program that prints "Hello, World!" to the console.
+	if err != nil {
+		log.Fatalf("config file is lot loaded properly: %v\n", err)
+	}
+
+	api.StartServer(cfg)
+}
