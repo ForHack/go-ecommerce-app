@@ -6,6 +6,7 @@ import (
 	"go-ecommerce-app/internal/api/rest/handlers"
 	"go-ecommerce-app/internal/domain"
 	"go-ecommerce-app/internal/helper"
+	"log"
 
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/driver/postgres"
@@ -21,7 +22,11 @@ func StartServer(config configs.AppConfig) {
 	}
 
 	// run migration
-	db.AutoMigrate(&domain.User{})
+	err = db.AutoMigrate(&domain.User{}, &domain.BankAccount{})
+	if err != nil {
+		log.Fatalf("Auto migration failed: %v", err)
+	}
+
 	auth := helper.SetupAuth(config.AppSecret)
 
 	rh := &rest.RestHandler{App: app, DB: db, Auth: auth, Config: config}
