@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"go-ecommerce-app/internal/api/rest"
+	"go-ecommerce-app/internal/domain"
 	"go-ecommerce-app/internal/dto"
 	"go-ecommerce-app/internal/repository"
 	"go-ecommerce-app/internal/services"
@@ -117,25 +118,83 @@ func (h *CatalogHandler) DeleteCategory(ctx *fiber.Ctx) error {
 ///////////////////////////// Products /////////////////////////////////////
 
 func (h *CatalogHandler) CreateProducts(ctx *fiber.Ctx) error {
-	return rest.SuccessMessage(ctx, "CreateProducts", nil)
+	req := dto.CreateProductRequest{}
+	err := ctx.BodyParser(&req)
+	if err != nil {
+		return rest.BadRequestError(ctx, "create product request body is not valid")
+	}
+
+	user := h.svc.Auth.GetCurrentUser(ctx)
+	err = h.svc.CreateProduct(req, user)
+	if err != nil {
+		return rest.InternalError(ctx, err)
+	}
+
+	return rest.SuccessMessage(ctx, "product created successfully", nil)
 }
 
 func (h *CatalogHandler) EditProduct(ctx *fiber.Ctx) error {
-	return rest.SuccessMessage(ctx, "CreateProducts", nil)
+	id, _ := strconv.Atoi(ctx.Params("id"))
+	req := dto.CreateProductRequest{}
+	err := ctx.BodyParser(&req)
+	if err != nil {
+		return rest.BadRequestError(ctx, "update product request body is not valid")
+	}
+
+	user := h.svc.Auth.GetCurrentUser(ctx)
+	product, err := h.svc.EditProduct(id, req, user)
+	if err != nil {
+		return rest.InternalError(ctx, err)
+	}
+
+	return rest.SuccessMessage(ctx, "CreateProducts", product)
 }
 
 func (h *CatalogHandler) GetProducts(ctx *fiber.Ctx) error {
-	return rest.SuccessMessage(ctx, "GetProducts", nil)
+	products, err := h.svc.GetProducts()
+	if err != nil {
+		return rest.ErrorMessage(ctx, 404, err)
+	}
+
+	return rest.SuccessMessage(ctx, "products", products)
 }
 
 func (h *CatalogHandler) GetProduct(ctx *fiber.Ctx) error {
-	return rest.SuccessMessage(ctx, "GetProduct", nil)
+	id, _ := strconv.Atoi(ctx.Params("id"))
+
+	product, err := h.svc.GetProductById(id)
+	if err != nil {
+		return rest.ErrorMessage(ctx, 404, err)
+	}
+
+	return rest.SuccessMessage(ctx, "GetProduct", product)
 }
 
 func (h *CatalogHandler) UpdateStock(ctx *fiber.Ctx) error {
-	return rest.SuccessMessage(ctx, "UpdateStock", nil)
+	id, _ := strconv.Atoi(ctx.Params("id"))
+	req := dto.UpdateStockRequest{}
+	err := ctx.BodyParser(&req)
+	if err != nil {
+		return rest.BadRequestError(ctx, "update stock request body is not valid")
+	}
+
+	user := h.svc.Auth.GetCurrentUser(ctx)
+
+	product := domain.Product{
+		ID:     uint(id),
+		Stock:  uint(req.Stock),
+		UserId: int(user.ID),
+	}
+	updateProduct, _ := h.svc.UpdateProductStock(product)
+
+	return rest.SuccessMessage(ctx, "update stock successfully", updateProduct)
 }
 
 func (h *CatalogHandler) DeleteProduct(ctx *fiber.Ctx) error {
-	return rest.SuccessMessage(ctx, "DeleteProduct", nil)
+	id, _ := strconv.Atoi(ctx.Params("id"))
+
+	user := h.svc.Auth.GetCurrentUser(ctx)
+	err := h.svc.DeleteProduct(id, user)
+
+	return rest.SuccessMessage(ctx, "delete product", err)
 }
