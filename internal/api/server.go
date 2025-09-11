@@ -22,7 +22,7 @@ func StartServer(config configs.AppConfig) {
 	}
 
 	// run migration
-	err = db.AutoMigrate(&domain.User{}, &domain.BankAccount{})
+	err = db.AutoMigrate(&domain.User{}, &domain.BankAccount{}, &domain.Category{}, &domain.Product{})
 	if err != nil {
 		log.Fatalf("Auto migration failed: %v", err)
 	}
@@ -37,4 +37,5 @@ func StartServer(config configs.AppConfig) {
 
 func setupRoutes(rh *rest.RestHandler) {
 	handlers.SetupUserRoutes(rh)
+	handlers.SetupCatalogRoutes(rh)
 }
