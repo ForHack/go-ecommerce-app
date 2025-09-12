@@ -14,6 +14,7 @@ import (
 
 type UserService struct {
 	Repo   repository.UserRepository
+	CRepo  repository.CatalogRepository
 	Auth   helper.Auth
 	Config configs.AppConfig
 }
@@ -178,8 +179,48 @@ func (s *UserService) FindCart(id uint) ([]interface{}, error) {
 	return nil, nil
 }
 
-func (s *UserService) CreateCart(input any, u domain.User) ([]interface{}, error) {
-	return nil, nil
+func (s *UserService) CreateCart(input dto.CreateCartRequest, u domain.User) ([]domain.Cart, error) {
+	// check if the cart exists for the user
+	cart, _ := s.Repo.FindCartItem(u.ID, input.ProductId)
+
+	if cart.ID > 0 {
+		if input.ProductId == 0 {
+			return nil, errors.New("product id is required")
+		}
+
+		if input.Qty < 1 {
+			err := s.Repo.DeleteCartById(cart.ID)
+			if err != nil {
+				return nil, errors.New("failed to delete cart item")
+			}
+		} else {
+			cart.Qty = input.Qty
+			err := s.Repo.CreateCart(cart)
+			if err != nil {
+				return nil, errors.New("failed to update cart item")
+			}
+		}
+	} else {
+		product, _ := s.CRepo.FindProductByID(int(input.ProductId))
+		if product.ID > 0 {
+			return nil, errors.New("product does not exist")
+		}
+
+		err := s.Repo.CreateCart(domain.Cart{
+			ProductId: input.ProductId,
+			UserId:    u.ID,
+			Name:      product.Name,
+			ImageUrl:  product.ImageUrl,
+			Qty:       input.Qty,
+			Price:     product.Price,
+			SellerId:  uint(product.UserId),
+		})
+		if err != nil {
+			return nil, errors.New("failed to add product to cart")
+		}
+	}
+
+	return s.Repo.FindCartItems(u.ID)
 }
 
 func (s *UserService) CreateOrder(u domain.User) (int, error) {

@@ -148,7 +148,6 @@ func (a *Auth) AuthorizeSeller(ctx *fiber.Ctx) error {
 			"reason":  "Missing Authorization header",
 		})
 	}
-	// Todo
 	user, err := a.VerifyToken(authHeader[0])
 
 	if err != nil {

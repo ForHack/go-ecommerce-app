@@ -35,11 +35,13 @@ func SetupUserRoutes(rh *rest.RestHandler) {
 	// Protected routes
 	pvtRoutes.Get("/verify", handler.GetVerificationCode)
 	pvtRoutes.Post("/verify", handler.Verify)
+
 	pvtRoutes.Post("/profile", handler.CreateProfile)
 	pvtRoutes.Get("/profile", handler.GetProfile)
 
 	pvtRoutes.Post("/cart", handler.AddToCart)
 	pvtRoutes.Get("/cart", handler.GetCart)
+
 	pvtRoutes.Get("/order", handler.GetOrders)
 	pvtRoutes.Get("/order/:id", handler.GetOrder)
 
@@ -147,9 +149,22 @@ func (h *UserHandler) GetProfile(ctx *fiber.Ctx) error {
 }
 
 func (h *UserHandler) AddToCart(ctx *fiber.Ctx) error {
-	return ctx.Status(fiber.StatusOK).JSON(&fiber.Map{
-		"message": "AddToCart",
-	})
+	req := dto.CreateCartRequest{}
+	if err := ctx.BodyParser(&req); err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(&fiber.Map{
+			"message": "request parameters are not valid",
+		})
+	}
+
+	user := h.svc.Auth.GetCurrentUser(ctx)
+
+	// Call service to add to cart
+	cartItems, err := h.svc.CreateCart(req, user)
+	if err != nil {
+		return rest.InternalError(ctx, err)
+	}
+
+	return rest.SuccessMessage(ctx, "Product added to cart successfully", cartItems)
 }
 func (h *UserHandler) GetCart(ctx *fiber.Ctx) error {
 	return ctx.Status(fiber.StatusOK).JSON(&fiber.Map{
