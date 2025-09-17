@@ -26,6 +26,7 @@ func StartServer(config configs.AppConfig) {
 	err = db.
 		AutoMigrate(
 			&domain.User{},
+			&domain.Address{},
 			&domain.BankAccount{},
 			&domain.Category{},
 			&domain.Product{},
