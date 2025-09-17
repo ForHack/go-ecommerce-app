@@ -23,6 +23,10 @@ type UserRepository interface {
 	UpdateCart(e domain.Cart) error
 	DeleteCartById(id uint) error
 	DeleteCartItems(uId uint) error
+
+	// Profile
+	CreateProfile(e domain.Address) error
+	UpdateProfile(e domain.Address) error
 }
 
 type userRepository struct {
@@ -47,7 +51,7 @@ func (r userRepository) CreateUser(user domain.User) (domain.User, error) {
 func (r userRepository) FindUser(email string) (domain.User, error) {
 	var user domain.User
 
-	err := r.db.First(&user, "email = ?", email).Error
+	err := r.db.Preload("Address").First(&user, "email = ?", email).Error
 	if err != nil {
 		log.Printf("Find user error %v", err)
 		return domain.User{}, errors.New("user does not exist")
@@ -120,4 +124,22 @@ func (r *userRepository) UpdateCart(c domain.Cart) error {
 	var cart domain.Cart
 	err := r.db.Model(&cart).Clauses(clause.Returning{}).Where("id = ?", c.ID).Updates(c).Error
 	return err
+}
+
+func (r userRepository) CreateProfile(e domain.Address) error {
+	err := r.db.Create(&e).Error
+	if err != nil {
+		return errors.New("failed to create Profile")
+	}
+
+	return nil
+}
+
+func (r userRepository) UpdateProfile(e domain.Address) error {
+	err := r.db.Where("user_id = ?", e.UserID).Updates(e).Error
+	if err != nil {
+		return errors.New("failed to update Profile")
+	}
+
+	return nil
 }

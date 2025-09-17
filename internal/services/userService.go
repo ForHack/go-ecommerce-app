@@ -127,7 +127,7 @@ func (s *UserService) VerifyCode(id uint, code int) error {
 	return nil
 }
 
-func (s *UserService) CreateProfile(id uint, input any) error {
+func (s *UserService) CreateProfile(id uint, input dto.ProfileInput) error {
 
 	return nil
 }
@@ -175,8 +175,10 @@ func (s *UserService) BecomeSeller(id uint, input dto.SellerInput) (string, erro
 	return token, err
 }
 
-func (s *UserService) FindCart(id uint) ([]interface{}, error) {
-	return nil, nil
+func (s *UserService) FindCart(id uint) ([]domain.Cart, error) {
+	cartItems, err := s.Repo.FindCartItems(id)
+
+	return cartItems, err
 }
 
 func (s *UserService) CreateCart(input dto.CreateCartRequest, u domain.User) ([]domain.Cart, error) {
@@ -195,14 +197,14 @@ func (s *UserService) CreateCart(input dto.CreateCartRequest, u domain.User) ([]
 			}
 		} else {
 			cart.Qty = input.Qty
-			err := s.Repo.CreateCart(cart)
+			err := s.Repo.UpdateCart(cart)
 			if err != nil {
 				return nil, errors.New("failed to update cart item")
 			}
 		}
 	} else {
 		product, _ := s.CRepo.FindProductByID(int(input.ProductId))
-		if product.ID > 0 {
+		if product.ID < 1 {
 			return nil, errors.New("product does not exist")
 		}
 
