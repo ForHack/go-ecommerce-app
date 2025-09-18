@@ -31,8 +31,9 @@ func StartServer(config configs.AppConfig) {
 			&domain.Category{},
 			&domain.Product{},
 			&domain.Cart{},
-			&domain.OrderItem{},
 			&domain.Order{},
+			&domain.OrderItem{},
+			&domain.Payment{},
 		)
 	if err != nil {
 		log.Fatalf("Auto migration failed: %v", err)
@@ -55,5 +56,6 @@ func StartServer(config configs.AppConfig) {
 
 func setupRoutes(rh *rest.RestHandler) {
 	handlers.SetupUserRoutes(rh)
+	handlers.SetupTransactionRoutes(rh)
 	handlers.SetupCatalogRoutes(rh)
 }

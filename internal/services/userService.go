@@ -298,7 +298,7 @@ func (s *UserService) CreateOrder(u domain.User) (int, error) {
 	// find success payment reference status
 	paymentId := "pay_12345"
 	txnId := "txn_12345"
-	orderRefId, _ := helper.RandomNumbers(8)
+	orderRef, _ := helper.RandomNumbers(8)
 
 	// create order with generated order reference
 	var amount float64
@@ -320,24 +320,39 @@ func (s *UserService) CreateOrder(u domain.User) (int, error) {
 		UserId:         u.ID,
 		PaymentId:      paymentId,
 		TransactionId:  txnId,
-		OrderRefNumber: uint(orderRefId),
+		OrderRefNumber: uint(orderRef),
 		Items:          orderItems,
 	}
 	err = s.Repo.CreateOrder(order)
+	if err != nil {
+		return 0, err
+	}
 
 	// send notification to user
 
 	// remove cart items
+	err = s.Repo.DeleteCartItems(u.ID)
+	if err != nil {
+		return 0, errors.New("failed to clear cart items")
+	}
 
-	// return order reference
-
-	return 0, nil
+	return orderRef, nil
 }
 
-func (s *UserService) GetOrders(u domain.User) ([]interface{}, error) {
-	return nil, nil
+func (s *UserService) GetOrders(u domain.User) ([]domain.Order, error) {
+	orders, err := s.Repo.FindOrders(u.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	return orders, nil
 }
 
-func (s *UserService) GetOrderById(id uint, uId uint) (interface{}, error) {
-	return nil, nil
+func (s *UserService) GetOrderById(id uint, uId uint) (domain.Order, error) {
+	order, err := s.Repo.FindOrderById(id, uId)
+	if err != nil {
+		return order, err
+	}
+
+	return order, nil
 }
