@@ -285,6 +285,52 @@ func (s *UserService) CreateCart(input dto.CreateCartRequest, u domain.User) ([]
 }
 
 func (s *UserService) CreateOrder(u domain.User) (int, error) {
+	// get cart items for the user
+	cartItems, err := s.Repo.FindCartItems(u.ID)
+	if err != nil {
+		return 0, errors.New("cart does not exist")
+	}
+
+	if len(cartItems) == 0 {
+		return 0, errors.New("cart is empty. cannot create order")
+	}
+
+	// find success payment reference status
+	paymentId := "pay_12345"
+	txnId := "txn_12345"
+	orderRefId, _ := helper.RandomNumbers(8)
+
+	// create order with generated order reference
+	var amount float64
+	var orderItems []domain.OrderItem
+
+	for _, item := range cartItems {
+		amount += item.Price * float64(item.Qty)
+		orderItems = append(orderItems, domain.OrderItem{
+			ProductId: item.ProductId,
+			Qty:       int(item.Qty),
+			Price:     item.Price,
+			Name:      item.Name,
+			ImageUrl:  item.ImageUrl,
+			SellerId:  item.SellerId,
+		})
+	}
+
+	order := domain.Order{
+		UserId:         u.ID,
+		PaymentId:      paymentId,
+		TransactionId:  txnId,
+		OrderRefNumber: uint(orderRefId),
+		Items:          orderItems,
+	}
+	err = s.Repo.CreateOrder(order)
+
+	// send notification to user
+
+	// remove cart items
+
+	// return order reference
+
 	return 0, nil
 }
 

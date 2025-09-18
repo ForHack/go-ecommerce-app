@@ -24,6 +24,11 @@ type UserRepository interface {
 	DeleteCartById(id uint) error
 	DeleteCartItems(uId uint) error
 
+	// Order
+	CreateOrder(o domain.Order) error
+	FindOrders(uId uint) ([]domain.Order, error)
+	FindOrderById(id uint) (domain.Order, error)
+
 	// Profile
 	CreateProfile(e domain.Address) error
 	UpdateProfile(e domain.Address) error
@@ -142,4 +147,16 @@ func (r userRepository) UpdateProfile(e domain.Address) error {
 	}
 
 	return nil
+}
+
+func (r userRepository) CreateOrder(o domain.Order) error {
+	return nil
+}
+
+func (r userRepository) FindOrders(uId uint) ([]domain.Order, error) {
+	return nil, nil
+}
+
+func (r userRepository) FindOrderById(id uint) (domain.Order, error) {
+	return domain.Order{}, nil
 }

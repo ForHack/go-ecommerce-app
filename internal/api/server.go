@@ -31,6 +31,8 @@ func StartServer(config configs.AppConfig) {
 			&domain.Category{},
 			&domain.Product{},
 			&domain.Cart{},
+			&domain.OrderItem{},
+			&domain.Order{},
 		)
 	if err != nil {
 		log.Fatalf("Auto migration failed: %v", err)
