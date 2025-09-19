@@ -5,13 +5,15 @@ import (
 	"go-ecommerce-app/internal/helper"
 	"go-ecommerce-app/internal/repository"
 	"go-ecommerce-app/internal/services"
+	"go-ecommerce-app/pkg/payment"
 
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 )
 
 type TransactionHandler struct {
-	svg services.TransactionService
+	svg           services.TransactionService
+	paymentClient payment.PaymentClient
 }
 
 func initializeTransactionService(db *gorm.DB, auth helper.Auth) services.TransactionService {
@@ -26,7 +28,8 @@ func SetupTransactionRoutes(as *rest.RestHandler) {
 	svc := initializeTransactionService(as.DB, as.Auth)
 
 	handler := &TransactionHandler{
-		svg: svc,
+		svg:           svc,
+		paymentClient: as.Pc,
 	}
 
 	secRoute := app.Group("/", as.Auth.Authorize)
@@ -38,13 +41,18 @@ func SetupTransactionRoutes(as *rest.RestHandler) {
 }
 
 func (h *TransactionHandler) MakePayment(ctx *fiber.Ctx) error {
-	payload := struct {
-		message string `json:"message"`
-	}{
-		message: "Payment successful",
+	sessionResult, err := h.paymentClient.CreatePayment(100, 123, 145)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
 	}
 
-	return ctx.Status(fiber.StatusOK).JSON(payload)
+	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message":     "Payment initiated successfully",
+		"result":      sessionResult,
+		"payment_url": sessionResult.URL,
+	})
 }
 
 func (h *TransactionHandler) GetOrders(ctx *fiber.Ctx) error {
