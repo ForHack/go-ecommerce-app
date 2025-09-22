@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"go-ecommerce-app/internal/api/rest"
 	"go-ecommerce-app/internal/helper"
 	"go-ecommerce-app/internal/repository"
@@ -12,7 +13,8 @@ import (
 )
 
 type TransactionHandler struct {
-	svg           services.TransactionService
+	svc           services.TransactionService
+	userSvc       services.UserService
 	paymentClient payment.PaymentClient
 }
 
@@ -26,10 +28,17 @@ func initializeTransactionService(db *gorm.DB, auth helper.Auth) services.Transa
 func SetupTransactionRoutes(as *rest.RestHandler) {
 	app := as.App
 	svc := initializeTransactionService(as.DB, as.Auth)
+	userSvc := services.UserService{
+		Repo:   repository.NewUserRepository(as.DB),
+		CRepo:  repository.NewCatalogRepository(as.DB),
+		Auth:   as.Auth,
+		Config: as.Config,
+	}
 
 	handler := &TransactionHandler{
-		svg:           svc,
+		svc:           svc,
 		paymentClient: as.Pc,
+		userSvc:       userSvc,
 	}
 
 	secRoute := app.Group("/", as.Auth.Authorize)
@@ -41,7 +50,28 @@ func SetupTransactionRoutes(as *rest.RestHandler) {
 }
 
 func (h *TransactionHandler) MakePayment(ctx *fiber.Ctx) error {
-	sessionResult, err := h.paymentClient.CreatePayment(100, 123, 145)
+	// gram authorize user
+	user := h.svc.Auth.GetCurrentUser(ctx)
+
+	activePayment, err := h.svc.GetActivePayment(user.ID)
+	if activePayment.ID > 0 {
+		return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
+			"error":       "You have an ongoing payment. Please complete it before initiating a new one.",
+			"payment_url": activePayment.PaymentUrl,
+		})
+	}
+
+	_, amount, err := h.userSvc.FindCart(user.ID)
+
+	orderId, err := helper.RandomNumbers(8)
+	if err != nil {
+		return rest.InternalError(ctx, errors.New("failed to generate order id"))
+	}
+
+	sessionResult, err := h.paymentClient.CreatePayment(amount, user.ID, orderId)
+
+	err = h.svc.StoreCreatedPayment(user.ID, sessionResult, amount, orderId)
+
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),

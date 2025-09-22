@@ -9,6 +9,7 @@ import (
 
 type TransactionRepository interface {
 	CreatePayment(payment *domain.Payment) error
+	FindInitialPayment(uId uint) (*domain.Payment, error)
 	FindOrders(uId uint) ([]domain.OrderItem, error)
 	FindOrderById(uId uint, id uint) (dto.SellerOrderDetails, error)
 }
@@ -18,11 +19,20 @@ type transactionStorage struct {
 }
 
 func (t *transactionStorage) CreatePayment(payment *domain.Payment) error {
-	return nil
+	return t.db.Create(payment).Error
 }
 
 func (t *transactionStorage) FindOrders(uId uint) ([]domain.OrderItem, error) {
 	return nil, nil
+}
+
+func (t *transactionStorage) FindInitialPayment(uId uint) (*domain.Payment, error) {
+	var payment *domain.Payment
+	err := t.db.First(&payment, "user_id = ? AND status=initial", uId).Order("created_at desc").Error
+	if err != nil {
+		return nil, err
+	}
+	return payment, nil
 }
 
 func (t *transactionStorage) FindOrderById(uId uint, id uint) (dto.SellerOrderDetails, error) {

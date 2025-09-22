@@ -9,7 +9,7 @@ import (
 )
 
 type PaymentClient interface {
-	CreatePayment(amount float64, userId uint, orderId uint) (*stripe.CheckoutSession, error)
+	CreatePayment(amount float64, userId uint, orderId string) (*stripe.CheckoutSession, error)
 	GetPaymentStatus(pId string) (*stripe.CheckoutSession, error)
 }
 
@@ -20,7 +20,7 @@ type payment struct {
 }
 
 // CreatePayment implements PaymentClient.
-func (p *payment) CreatePayment(amount float64, userId uint, orderId uint) (*stripe.CheckoutSession, error) {
+func (p *payment) CreatePayment(amount float64, userId uint, orderId string) (*stripe.CheckoutSession, error) {
 	stripe.Key = p.stripeSecretKey
 	amountInCents := amount * 100
 
@@ -43,7 +43,7 @@ func (p *payment) CreatePayment(amount float64, userId uint, orderId uint) (*str
 		CancelURL:  stripe.String(p.cancelUrl),
 	}
 
-	params.AddMetadata("order_id", fmt.Sprintf("%d", orderId))
+	params.AddMetadata("order_id", fmt.Sprintf("%s", orderId))
 	params.AddMetadata("user_id", fmt.Sprintf("%d", userId))
 
 	session, err := session.New(params)
